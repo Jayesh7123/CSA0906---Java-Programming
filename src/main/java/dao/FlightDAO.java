@@ -168,6 +168,31 @@ public class FlightDAO {
     }
 
     /**
+     * Retrieves ALL flights including ones with 0 available seats.
+     * Used by the web UI to display all flights (full ones are greyed out).
+     *
+     * @return List of all Flight objects regardless of seat count
+     */
+    public List<Flight> getAllFlightsIncludingFull() {
+        List<Flight> flights = new ArrayList<>();
+        String sql = "SELECT * FROM flights ORDER BY flight_id";
+        Connection connection = null;
+        try {
+            connection = DBConnection.getConnection();
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                flights.add(mapRowToFlight(resultSet));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error retrieving all flights: " + e.getMessage());
+        } finally {
+            DBConnection.closeConnection(connection);
+        }
+        return flights;
+    }
+
+    /**
      * Helper method — maps a single ResultSet row to a Flight object.
      * Used by all query methods to avoid repeating column-mapping code.
      *

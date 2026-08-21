@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkyWay — Flight Booking System</title>
+  <meta name="description" content="Book, search, and manage your flights with SkyWay — a modern flight booking system backed by Java JDBC + MySQL." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep:    #0a0e1a;
+      --bg-card:    #111827;
+      --bg-glass:   rgba(255,255,255,0.04);
+      --border:     rgba(255,255,255,0.08);
+      --border-hov: rgba(99,102,241,0.5);
+      --accent:     #6366f1;
+      --accent2:    #818cf8;
+      --accent-grd: linear-gradient(135deg,#6366f1,#a78bfa);
+      --success:    #10b981;
+      --danger:     #ef4444;
+      --warning:    #f59e0b;
+      --text-1:     #f9fafb;
+      --text-2:     #9ca3af;
+      --text-3:     #6b7280;
+      --radius-sm:  8px;
+      --radius-md:  14px;
+      --radius-lg:  20px;
+      --shadow:     0 8px 32px rgba(0,0,0,0.4);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:var(--bg-deep);color:var(--text-1);min-height:100vh;overflow-x:hidden;}
+
+    /* BG ORBS */
+    .bg-orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+    .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.15;animation:drift 20s ease-in-out infinite alternate;}
+    .orb1{width:600px;height:600px;background:radial-gradient(circle,#6366f1,transparent);top:-200px;left:-200px;animation-duration:25s;}
+    .orb2{width:500px;height:500px;background:radial-gradient(circle,#a78bfa,transparent);bottom:-150px;right:-150px;animation-duration:30s;animation-delay:-10s;}
+    .orb3{width:350px;height:350px;background:radial-gradient(circle,#3b82f6,transparent);top:40%;left:50%;animation-duration:20s;animation-delay:-5s;}
+    @keyframes drift{0%{transform:translate(0,0) scale(1);}100%{transform:translate(40px,40px) scale(1.15);}}
+
+    /* LAYOUT */
+    .app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 20px 60px;}
+
+    /* HEADER */
+    header{display:flex;align-items:center;justify-content:space-between;padding:24px 0 20px;border-bottom:1px solid var(--border);margin-bottom:36px;}
+    .logo{display:flex;align-items:center;gap:12px;}
+    .logo-icon{width:42px;height:42px;border-radius:12px;background:var(--accent-grd);display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 20px rgba(99,102,241,0.5);}
+    .logo-text{font-size:22px;font-weight:800;letter-spacing:-0.5px;}
+    .logo-text span{background:var(--accent-grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .tagline{font-size:12px;color:var(--text-3);margin-top:2px;}
+    .db-badge{display:flex;align-items:center;gap:8px;font-size:12px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:var(--success);padding:6px 14px;border-radius:20px;}
+    .db-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:pulse 2s infinite;}
+    .db-badge.error{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--danger);}
+    .db-badge.error .db-dot{background:var(--danger);animation:none;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+    /* HERO */
+    .hero{text-align:center;padding:32px 0 40px;}
+    .hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:800;letter-spacing:-1.5px;line-height:1.15;margin-bottom:16px;}
+    .hero h1 .grad{background:var(--accent-grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .hero p{font-size:17px;color:var(--text-2);max-width:520px;margin:0 auto;}
+
+    /* STATS BAR */
+    .stats-bar{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:24px 0 40px;}
+    .stat-pill{background:var(--bg-glass);border:1px solid var(--border);border-radius:30px;padding:10px 20px;display:flex;align-items:center;gap:8px;font-size:14px;}
+    .stat-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--success);}
+    .stat-pill .dot.warn{background:var(--warning);}
+    .stat-num{font-weight:700;color:var(--text-1);}
+    .stat-label{color:var(--text-2);}
+
+    /* SEARCH HERO */
+    .search-hero{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;box-shadow:var(--shadow);margin-bottom:48px;}
+    .search-group{flex:1;min-width:160px;}
+    .search-group label{font-size:12px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:8px;}
+    .search-group select{width:100%;background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-1);font-family:inherit;font-size:15px;padding:12px 14px;outline:none;transition:border-color .25s;}
+    .search-group select:focus{border-color:var(--accent);}
+    .search-group select option{background:var(--bg-card);}
+    .btn-search{background:var(--accent-grd);color:#fff;border:none;border-radius:var(--radius-sm);padding:13px 32px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:transform .2s,box-shadow .2s;white-space:nowrap;box-shadow:0 4px 16px rgba(99,102,241,.4);}
+    .btn-search:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,102,241,.5);}
+
+    /* TABS */
+    .section-tabs{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap;}
+    .tab-btn{padding:9px 20px;border-radius:30px;border:1px solid var(--border);background:transparent;color:var(--text-2);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .25s;}
+    .tab-btn:hover{border-color:var(--accent);color:var(--text-1);}
+    .tab-btn.active{background:var(--accent-grd);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(99,102,241,.4);}
+
+    /* SECTIONS */
+    .section{display:none;}
+    .section.visible{display:block;animation:fadeSlide .35s ease;}
+    @keyframes fadeSlide{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+    .section-title{font-size:22px;font-weight:700;margin-bottom:6px;}
+    .section-sub{font-size:14px;color:var(--text-2);margin-bottom:24px;}
+
+    /* FLIGHT CARDS */
+    .flights-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px;}
+    .flight-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:22px;cursor:pointer;transition:transform .25s,border-color .25s,box-shadow .25s;position:relative;overflow:hidden;}
+    .flight-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent-grd);transform:scaleX(0);transform-origin:left;transition:transform .3s;}
+    .flight-card:hover{transform:translateY(-4px);border-color:var(--border-hov);box-shadow:0 12px 36px rgba(0,0,0,.5);}
+    .flight-card:hover::before{transform:scaleX(1);}
+    .flight-card.no-seats{opacity:.55;cursor:not-allowed;}
+    .flight-card.no-seats:hover{transform:none;border-color:var(--border);}
+    .fc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+    .fc-number{font-size:13px;font-weight:700;color:var(--accent2);letter-spacing:1px;background:rgba(99,102,241,.12);padding:4px 10px;border-radius:20px;}
+    .fc-seats-badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;}
+    .fc-seats-badge.ok{background:rgba(16,185,129,.12);color:var(--success);}
+    .fc-seats-badge.warn{background:rgba(245,158,11,.12);color:var(--warning);}
+    .fc-seats-badge.full{background:rgba(239,68,68,.12);color:var(--danger);}
+    .fc-route{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+    .fc-city{font-size:20px;font-weight:800;}
+    .fc-arrow{color:var(--accent);font-size:18px;}
+    .fc-sep{height:1px;background:var(--border);margin:12px 0;}
+    .fc-meta{display:flex;gap:16px;flex-wrap:wrap;}
+    .fc-meta-item{display:flex;flex-direction:column;gap:2px;}
+    .fc-meta-label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;}
+    .fc-meta-val{font-size:14px;font-weight:600;}
+    .btn-book{display:block;width:100%;margin-top:16px;padding:11px;background:var(--accent-grd);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .2s;box-shadow:0 4px 12px rgba(99,102,241,.3);}
+    .btn-book:hover{opacity:.9;transform:translateY(-1px);}
+    .btn-book:disabled{background:var(--bg-glass);color:var(--text-3);cursor:not-allowed;box-shadow:none;transform:none;}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .3s;}
+    .modal-overlay.open{opacity:1;pointer-events:all;}
+    .modal{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;max-width:540px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.6);transform:translateY(24px) scale(.96);transition:transform .3s;max-height:90vh;overflow-y:auto;}
+    .modal-overlay.open .modal{transform:translateY(0) scale(1);}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+    .modal-title{font-size:20px;font-weight:700;}
+    .btn-close{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text-2);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .btn-close:hover{border-color:var(--danger);color:var(--danger);}
+    .form-group{margin-bottom:18px;}
+    .form-group label{font-size:13px;color:var(--text-2);font-weight:500;display:block;margin-bottom:7px;}
+    .form-group input{width:100%;background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-1);font-family:inherit;font-size:15px;padding:12px 14px;transition:border-color .25s,box-shadow .25s;outline:none;}
+    .form-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.2);}
+    .modal-flight-summary{background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:22px;}
+    .mfs-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    .mfs-row:last-child{margin-bottom:0;}
+    .mfs-label{font-size:12px;color:var(--text-3);}
+    .mfs-val{font-size:14px;font-weight:600;}
+    .btn-primary{width:100%;padding:13px;background:var(--accent-grd);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .2s,transform .2s;box-shadow:0 4px 16px rgba(99,102,241,.4);}
+    .btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    .btn-danger{width:100%;padding:13px;background:rgba(239,68,68,.15);color:var(--danger);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:12px;}
+    .btn-danger:hover{background:rgba(239,68,68,.25);}
+
+    /* TOAST */
+    .toasts{position:fixed;bottom:28px;right:28px;z-index:200;display:flex;flex-direction:column;gap:10px;}
+    .toast{padding:14px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);min-width:280px;max-width:380px;animation:toastIn .35s ease;border-left:4px solid;}
+    .toast.success{background:#0d2b20;border-color:var(--success);color:var(--success);}
+    .toast.error{background:#2b0d0d;border-color:var(--danger);color:var(--danger);}
+    .toast.info{background:#0d1a2b;border-color:var(--accent);color:var(--accent2);}
+    .toast.out{animation:toastOut .3s ease forwards;}
+    @keyframes toastIn{from{opacity:0;transform:translateX(32px);}to{opacity:1;transform:translateX(0);}}
+    @keyframes toastOut{to{opacity:0;transform:translateX(32px);}}
+
+    /* TABLE */
+    .table-wrap{overflow-x:auto;border-radius:var(--radius-md);border:1px solid var(--border);}
+    table{width:100%;border-collapse:collapse;}
+    thead{background:var(--bg-glass);}
+    th{font-size:12px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.6px;padding:13px 16px;text-align:left;}
+    td{padding:14px 16px;font-size:14px;border-top:1px solid var(--border);color:var(--text-1);}
+    tr:hover td{background:var(--bg-glass);}
+    .badge-flight{font-weight:700;color:var(--accent2);background:rgba(99,102,241,.1);padding:3px 8px;border-radius:20px;font-size:12px;}
+    .btn-cancel-row{padding:6px 14px;border-radius:20px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;}
+    .btn-cancel-row:hover{background:rgba(239,68,68,.2);}
+
+    /* LOOKUP */
+    .lookup-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:28px;}
+    .lookup-input{flex:1;min-width:160px;background:var(--bg-glass);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-1);font-family:inherit;font-size:15px;padding:12px 16px;outline:none;transition:border-color .25s,box-shadow .25s;}
+    .lookup-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.2);}
+    .btn-lookup{padding:12px 24px;background:var(--accent-grd);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .2s;box-shadow:0 4px 12px rgba(99,102,241,.3);}
+    .btn-lookup:hover{opacity:.9;}
+
+    /* BOOKING DETAIL */
+    .booking-detail-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;max-width:560px;}
+    .bdc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+    .bdc-route{display:flex;align-items:center;gap:16px;margin-bottom:20px;}
+    .bdc-city{font-size:28px;font-weight:800;}
+    .bdc-arrow{color:var(--accent);font-size:24px;}
+    .bdc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+    .bdc-item label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;}
+    .bdc-item span{font-size:15px;font-weight:600;}
+
+    /* EMPTY */
+    .empty{text-align:center;padding:48px 20px;color:var(--text-3);}
+    .empty-icon{font-size:48px;margin-bottom:12px;}
+    .empty-msg{font-size:16px;font-weight:500;color:var(--text-2);margin-bottom:6px;}
+    .empty-sub{font-size:13px;}
+
+    /* SUCCESS */
+    .success-card{background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(99,102,241,.08));border:1px solid rgba(16,185,129,.25);border-radius:var(--radius-lg);padding:28px;text-align:center;max-width:500px;margin:0 auto;}
+    .success-icon{font-size:52px;margin-bottom:12px;}
+    .success-title{font-size:22px;font-weight:800;color:var(--success);margin-bottom:4px;}
+    .success-sub{font-size:14px;color:var(--text-2);margin-bottom:20px;}
+    .success-id{background:var(--bg-glass);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:14px 20px;font-size:20px;font-weight:800;color:var(--accent2);letter-spacing:2px;margin-bottom:20px;}
+    .success-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;margin-bottom:20px;}
+    .sdg-item label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;}
+    .sdg-item span{font-size:14px;font-weight:600;}
+    .btn-done{padding:12px 32px;background:var(--accent-grd);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(99,102,241,.4);transition:opacity .2s;}
+    .btn-done:hover{opacity:.9;}
+
+    /* SPINNER */
+    .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* OFFLINE BANNER */
+    .offline-banner{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:var(--danger);padding:14px 20px;border-radius:var(--radius-md);margin-bottom:24px;font-size:14px;}
+
+    footer{text-align:center;border-top:1px solid var(--border);padding:28px 0 0;margin-top:60px;color:var(--text-3);font-size:13px;}
+    footer span{color:var(--accent2);}
+
+    @media(max-width:600px){
+      .search-hero{flex-direction:column;}
+      .btn-search{width:100%;}
+      .flights-grid{grid-template-columns:1fr;}
+      .success-detail-grid,.bdc-grid{grid-template-columns:1fr;}
+      .lookup-bar{flex-direction:column;}
+      .lookup-input,.btn-lookup{width:100%;}
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<div class="app">
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">✈</div>
+      <div>
+        <div class="logo-text">Sky<span>Way</span></div>
+        <div class="tagline">Flight Booking System — Java JDBC + MySQL</div>
+      </div>
+    </div>
+    <div id="dbBadge" class="db-badge"><div class="db-dot"></div>Connecting to MySQL…</div>
+  </header>
+
+  <!-- OFFLINE WARNING (shown when backend not running) -->
+  <div class="offline-banner" id="offlineBanner" style="display:none;">
+    ⚠ Cannot reach the Java server at <strong>http://localhost:8080</strong>.
+    Please run <code>java -jar FlightBookingSystem-web-jar-with-dependencies.jar</code> first,
+    then refresh this page.
+  </div>
+
+  <section class="hero">
+    <h1>Find &amp; Book Your <span class="grad">Next Flight</span></h1>
+    <p>Powered by <strong>Java JDBC + MySQL</strong> — real database, real transactions.</p>
+  </section>
+
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-pill"><span class="spinner"></span><span class="stat-label">Loading from MySQL…</span></div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-hero">
+    <div class="search-group">
+      <label>From</label>
+      <select id="searchFrom"><option value="">Any City</option></select>
+    </div>
+    <div class="search-group">
+      <label>To</label>
+      <select id="searchTo"><option value="">Any City</option></select>
+    </div>
+    <button class="btn-search" onclick="doSearch()">🔍 Search Flights</button>
+  </div>
+
+  <!-- TABS -->
+  <div class="section-tabs">
+    <button class="tab-btn active" id="tab-flights"  onclick="showSection('flights')">✈ Available Flights</button>
+    <button class="tab-btn"        id="tab-bookings" onclick="showSection('bookings')">📋 All Bookings</button>
+    <button class="tab-btn"        id="tab-lookup"   onclick="showSection('lookup')">🔎 Lookup Booking</button>
+  </div>
+
+  <!-- SECTION: FLIGHTS -->
+  <div class="section visible" id="section-flights">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div class="section-title" id="flightsTitle">Available Flights</div>
+        <div class="section-sub"   id="flightsSub">Click any flight to book a seat</div>
+      </div>
+      <button style="padding:8px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text-2);cursor:pointer;font-family:inherit;font-size:13px;" onclick="resetSearch()">↩ Show All</button>
+    </div>
+    <div class="flights-grid" id="flightsGrid">
+      <div class="empty" style="grid-column:1/-1"><div class="spinner" style="width:28px;height:28px;border-width:3px;"></div></div>
+    </div>
+  </div>
+
+  <!-- SECTION: BOOKINGS -->
+  <div class="section" id="section-bookings">
+    <div class="section-title">All Bookings</div>
+    <div class="section-sub">Every booking — fetched live from MySQL via JDBC</div>
+    <div class="table-wrap" id="bookingsTableWrap"></div>
+  </div>
+
+  <!-- SECTION: LOOKUP -->
+  <div class="section" id="section-lookup">
+    <div class="section-title">Lookup Booking</div>
+    <div class="section-sub">Enter a Booking ID to view full details from MySQL</div>
+    <div class="lookup-bar">
+      <input type="number" class="lookup-input" id="lookupId" placeholder="Enter Booking ID (e.g. 1)" />
+      <button class="btn-lookup" onclick="lookupBooking()">Find Booking</button>
+    </div>
+    <div id="lookupResult"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="app">
+    <p>✈ SkyWay — Java <span>JDBC</span> + <span>MySQL</span> Flight Booking System &nbsp;•&nbsp; By <span>Jayesh</span></p>
+    <p style="margin-top:6px;">Backend: Java <code>com.sun.net.httpserver</code> → JDBC → MySQL 8.x</p>
+  </div>
+</footer>
+
+<!-- BOOK MODAL -->
+<div class="modal-overlay" id="bookModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Book Your Ticket</div>
+      <button class="btn-close" onclick="closeModal('bookModal')">✕</button>
+    </div>
+    <div class="modal-flight-summary" id="bookSummary"></div>
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="passengerName" placeholder="e.g. Jayesh Kumar" />
+    </div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="passengerEmail" placeholder="e.g. jayesh@example.com" />
+    </div>
+    <button class="btn-primary" id="confirmBookBtn" onclick="confirmBooking()">✔ Confirm Booking</button>
+  </div>
+</div>
+
+<!-- CANCEL MODAL -->
+<div class="modal-overlay" id="cancelModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Cancel Booking</div>
+      <button class="btn-close" onclick="closeModal('cancelModal')">✕</button>
+    </div>
+    <div id="cancelSummary" class="modal-flight-summary"></div>
+    <p style="font-size:14px;color:var(--text-2);margin-bottom:20px;">
+      This will DELETE the booking from MySQL and restore the seat. This action cannot be undone.
+    </p>
+    <button class="btn-danger" id="confirmCancelBtn" onclick="confirmCancel()">🗑 Yes, Cancel Booking</button>
+    <button class="btn-primary" style="margin-top:10px;" onclick="closeModal('cancelModal')">Keep Booking</button>
+  </div>
+</div>
+
+<div class="toasts" id="toastContainer"></div>
+
+<script>
+/* =================================================================
+   CONFIG — Java backend URL
+================================================================= */
+var API = 'http://localhost:8080/api';
+
+/* =================================================================
+   STATE
+================================================================= */
+var allFlights     = [];
+var currentFlightId = null;
+var currentCancelId = null;
+var activeFilter   = { from: '', to: '' };
+
+/* =================================================================
+   STARTUP
+================================================================= */
+(function init() {
+  checkServer();
+})();
+
+function checkServer() {
+  fetch(API + '/flights/all')
+    .then(function(r) { return r.json(); })
+    .then(function(flights) {
+      allFlights = flights;
+      setDbBadge(true);
+      document.getElementById('offlineBanner').style.display = 'none';
+      populateDropdowns();
+      renderStats();
+      renderFlights(flights.filter(function(f){ return f.availableSeats > 0; }), false);
+    })
+    .catch(function() {
+      setDbBadge(false);
+      document.getElementById('offlineBanner').style.display = 'block';
+      document.getElementById('flightsGrid').innerHTML =
+        '<div class="empty" style="grid-column:1/-1">' +
+        '<div class="empty-icon">🔌</div>' +
+        '<div class="empty-msg">Java server not running</div>' +
+        '<div class="empty-sub">Start the server with:<br><code>java -jar FlightBookingSystem-web-jar-with-dependencies.jar</code><br>then refresh this page.</div>' +
+        '</div>';
+      document.getElementById('statsBar').innerHTML =
+        '<div class="stat-pill" style="border-color:rgba(239,68,68,.3);color:var(--danger)">⚠ MySQL Disconnected</div>';
+    });
+}
+
+/* =================================================================
+   DB BADGE
+================================================================= */
+function setDbBadge(connected) {
+  var badge = document.getElementById('dbBadge');
+  if (connected) {
+    badge.className = 'db-badge';
+    badge.innerHTML = '<div class="db-dot"></div>MySQL Connected (JDBC)';
+  } else {
+    badge.className = 'db-badge error';
+    badge.innerHTML = '<div class="db-dot"></div>MySQL Disconnected';
+  }
+}
+
+/* =================================================================
+   STATS BAR
+================================================================= */
+function renderStats() {
+  var available  = allFlights.filter(function(f){ return f.availableSeats > 0; }).length;
+  var totalSeats = allFlights.reduce(function(a,f){ return a + f.availableSeats; }, 0);
+  // Fetch booking count separately
+  fetch(API + '/bookings')
+    .then(function(r){ return r.json(); })
+    .then(function(bookings) {
+      document.getElementById('statsBar').innerHTML =
+        '<div class="stat-pill"><div class="dot"></div><span class="stat-num">'+allFlights.length+'</span><span class="stat-label">Total Flights</span></div>' +
+        '<div class="stat-pill"><div class="dot"></div><span class="stat-num">'+available+'</span><span class="stat-label">Available</span></div>' +
+        '<div class="stat-pill"><div class="dot warn"></div><span class="stat-num">'+totalSeats+'</span><span class="stat-label">Open Seats</span></div>' +
+        '<div class="stat-pill"><div class="dot"></div><span class="stat-num">'+bookings.length+'</span><span class="stat-label">Bookings in DB</span></div>';
+    })
+    .catch(function() {
+      document.getElementById('statsBar').innerHTML =
+        '<div class="stat-pill"><div class="dot"></div><span class="stat-num">'+allFlights.length+'</span><span class="stat-label">Flights</span></div>' +
+        '<div class="stat-pill"><div class="dot warn"></div><span class="stat-num">'+totalSeats+'</span><span class="stat-label">Open Seats</span></div>';
+    });
+}
+
+/* =================================================================
+   DROPDOWNS
+================================================================= */
+function populateDropdowns() {
+  var sources = allFlights.map(function(f){ return f.source; }).filter(function(v,i,a){ return a.indexOf(v)===i; }).sort();
+  var dests   = allFlights.map(function(f){ return f.destination; }).filter(function(v,i,a){ return a.indexOf(v)===i; }).sort();
+  document.getElementById('searchFrom').innerHTML = '<option value="">Any City</option>' + sources.map(function(c){ return '<option>'+c+'</option>'; }).join('');
+  document.getElementById('searchTo').innerHTML   = '<option value="">Any City</option>' + dests.map(function(c){ return '<option>'+c+'</option>'; }).join('');
+}
+
+/* =================================================================
+   SEARCH
+================================================================= */
+function doSearch() {
+  var from = document.getElementById('searchFrom').value;
+  var to   = document.getElementById('searchTo').value;
+  activeFilter = { from: from, to: to };
+
+  if (!from && !to) { resetSearch(); return; }
+
+  var url = API + '/flights/search?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to);
+  document.getElementById('flightsTitle').textContent = 'Searching…';
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(flights) {
+      var label = [from, to].filter(Boolean).join(' → ');
+      document.getElementById('flightsTitle').textContent = 'Search Results: ' + label;
+      document.getElementById('flightsSub').textContent   = flights.length + ' flight(s) found in MySQL';
+      renderFlights(flights, true);
+      showSection('flights');
+    })
+    .catch(function(){ toast('Search failed. Is the server running?', 'error'); });
+}
+
+function resetSearch() {
+  activeFilter = { from:'', to:'' };
+  document.getElementById('searchFrom').value = '';
+  document.getElementById('searchTo').value   = '';
+  document.getElementById('flightsTitle').textContent = 'Available Flights';
+  document.getElementById('flightsSub').textContent   = 'Click any flight to book a seat';
+  var avail = allFlights.filter(function(f){ return f.availableSeats > 0; });
+  renderFlights(avail, false);
+}
+
+/* =================================================================
+   RENDER FLIGHTS
+================================================================= */
+function renderFlights(flights, isSearch) {
+  var grid = document.getElementById('flightsGrid');
+  if (!flights.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-msg">No flights found</div><div class="empty-sub">Try a different route</div></div>';
+    return;
+  }
+  grid.innerHTML = flights.map(function(f) {
+    var pct = f.totalSeats > 0 ? f.availableSeats / f.totalSeats : 0;
+    var badgeClass = 'ok', badgeText = f.availableSeats + ' Seats';
+    if (f.availableSeats === 0)  { badgeClass = 'full'; badgeText = 'Full'; }
+    else if (pct < 0.2)          { badgeClass = 'warn'; badgeText = f.availableSeats + ' Left!'; }
+    var dep = formatDate(f.departure);
+    return '<div class="flight-card'+(f.availableSeats===0?' no-seats':'')+'">'+
+      '<div class="fc-header">'+
+        '<span class="fc-number">'+f.number+'</span>'+
+        '<span class="fc-seats-badge '+badgeClass+'">'+badgeText+'</span>'+
+      '</div>'+
+      '<div class="fc-route"><span class="fc-city">'+f.source+'</span><span class="fc-arrow">→</span><span class="fc-city">'+f.destination+'</span></div>'+
+      '<div class="fc-sep"></div>'+
+      '<div class="fc-meta">'+
+        '<div class="fc-meta-item"><span class="fc-meta-label">Departure</span><span class="fc-meta-val">'+dep.date+'</span></div>'+
+        '<div class="fc-meta-item"><span class="fc-meta-label">Time</span><span class="fc-meta-val">'+dep.time+'</span></div>'+
+        '<div class="fc-meta-item"><span class="fc-meta-label">Total Seats</span><span class="fc-meta-val">'+f.totalSeats+'</span></div>'+
+      '</div>'+
+      '<button class="btn-book"'+(f.availableSeats===0?' disabled':'')+
+        ' onclick="openBookModal('+f.id+')">'+
+        (f.availableSeats===0?'No Seats Available':'Book This Flight →')+
+      '</button>'+
+    '</div>';
+  }).join('');
+}
+
+/* =================================================================
+   BOOK MODAL
+================================================================= */
+function openBookModal(flightId) {
+  var f = allFlights.filter(function(x){ return x.id===flightId; })[0];
+  if (!f || f.availableSeats <= 0) { toast('No seats available.', 'error'); return; }
+  currentFlightId = flightId;
+  document.getElementById('passengerName').value  = '';
+  document.getElementById('passengerEmail').value = '';
+  var dep = formatDate(f.departure);
+  document.getElementById('bookSummary').innerHTML =
+    '<div class="mfs-row"><span class="mfs-label">Flight</span><span class="mfs-val">'+f.number+'</span></div>'+
+    '<div class="mfs-row"><span class="mfs-label">Route</span><span class="mfs-val">'+f.source+' → '+f.destination+'</span></div>'+
+    '<div class="mfs-row"><span class="mfs-label">Departure</span><span class="mfs-val">'+dep.date+' at '+dep.time+'</span></div>'+
+    '<div class="mfs-row"><span class="mfs-label">Seats in MySQL</span><span class="mfs-val" style="color:var(--success)">'+f.availableSeats+'</span></div>';
+  var btn = document.getElementById('confirmBookBtn');
+  btn.disabled = false;
+  btn.textContent = '✔ Confirm Booking';
+  openModal('bookModal');
+}
+
+function confirmBooking() {
+  var name  = document.getElementById('passengerName').value.trim();
+  var email = document.getElementById('passengerEmail').value.trim();
+  if (!name)  { toast('Passenger name cannot be empty.', 'error'); return; }
+  if (!email || email.indexOf('@') < 0 || email.indexOf('.') < 0) { toast('Please enter a valid email.', 'error'); return; }
+
+  var btn = document.getElementById('confirmBookBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Booking via JDBC…';
+
+  fetch(API + '/bookings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ flightId: currentFlightId, name: name, email: email })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    btn.disabled = false;
+    btn.textContent = '✔ Confirm Booking';
+    closeModal('bookModal');
+    if (data.success) {
+      toast('Booking #'+data.bookingId+' saved to MySQL!', 'success');
+      // Refresh flights from server
+      return fetch(API + '/flights/all')
+        .then(function(r){ return r.json(); })
+        .then(function(flights) {
+          allFlights = flights;
+          renderStats();
+          resetSearch();
+          // Show success screen
+          showSuccessScreen(data.bookingId, name, email, currentFlightId);
+        });
+    } else {
+      toast(data.error || 'Booking failed.', 'error');
+    }
+  })
+  .catch(function() {
+    btn.disabled = false;
+    btn.textContent = '✔ Confirm Booking';
+    toast('Could not reach the Java server.', 'error');
+  });
+}
+
+/* =================================================================
+   SUCCESS SCREEN
+================================================================= */
+function showSuccessScreen(bookingId, name, email, flightId) {
+  var f   = allFlights.filter(function(x){ return x.id===flightId; })[0] || {};
+  var dep = f.departure ? formatDate(f.departure) : { date:'-', time:'-' };
+  showSection('flights');
+  document.getElementById('flightsGrid').innerHTML =
+    '<div style="grid-column:1/-1">'+
+    '<div class="success-card">'+
+      '<div class="success-icon">🎉</div>'+
+      '<div class="success-title">Booking Confirmed!</div>'+
+      '<div class="success-sub">INSERT executed in MySQL via JDBC — seat count updated atomically.</div>'+
+      '<div class="success-id">Booking ID: #'+bookingId+'</div>'+
+      '<div class="success-detail-grid">'+
+        '<div class="sdg-item"><label>Passenger</label><span>'+name+'</span></div>'+
+        '<div class="sdg-item"><label>Email</label><span>'+email+'</span></div>'+
+        '<div class="sdg-item"><label>Flight</label><span>'+(f.number||'')+'</span></div>'+
+        '<div class="sdg-item"><label>Route</label><span>'+(f.source||'')+' → '+(f.destination||'')+'</span></div>'+
+        '<div class="sdg-item"><label>Departure</label><span>'+dep.date+'</span></div>'+
+        '<div class="sdg-item"><label>Time</label><span>'+dep.time+'</span></div>'+
+      '</div>'+
+      '<button class="btn-done" onclick="resetSearch()">← View All Flights</button>'+
+    '</div></div>';
+}
+
+/* =================================================================
+   BOOKINGS TABLE
+================================================================= */
+function renderBookingsTable() {
+  var wrap = document.getElementById('bookingsTableWrap');
+  wrap.innerHTML = '<div class="empty"><div class="spinner" style="width:24px;height:24px;border-width:2px;"></div></div>';
+  fetch(API + '/bookings')
+    .then(function(r){ return r.json(); })
+    .then(function(bookings) {
+      if (!bookings.length) {
+        wrap.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-msg">No bookings in MySQL yet</div><div class="empty-sub">Book a flight to see it here</div></div>';
+        return;
+      }
+      wrap.innerHTML = '<table><thead><tr>'+
+        '<th>Booking ID</th><th>Passenger</th><th>Email</th><th>Flight</th><th>Route</th><th>Booking Date</th><th>Action</th>'+
+        '</tr></thead><tbody>'+
+        bookings.map(function(b){
+          return '<tr>'+
+            '<td><strong>#'+b.bookingId+'</strong></td>'+
+            '<td>'+b.passengerName+'</td>'+
+            '<td style="color:var(--text-2)">'+b.passengerEmail+'</td>'+
+            '<td><span class="badge-flight">'+b.flightNumber+'</span></td>'+
+            '<td>'+b.source+' → '+b.destination+'</td>'+
+            '<td style="color:var(--text-2)">'+b.bookingDate+'</td>'+
+            '<td><button class="btn-cancel-row" onclick="openCancelModal('+b.bookingId+')">Cancel</button></td>'+
+          '</tr>';
+        }).join('')+
+        '</tbody></table>';
+    })
+    .catch(function() {
+      wrap.innerHTML = '<div class="empty"><div class="empty-icon">⚠</div><div class="empty-msg">Could not load bookings</div><div class="empty-sub">Is the Java server running?</div></div>';
+    });
+}
+
+/* =================================================================
+   CANCEL MODAL
+================================================================= */
+function openCancelModal(bookingId) {
+  currentCancelId = bookingId;
+  fetch(API + '/bookings/' + bookingId)
+    .then(function(r){ return r.json(); })
+    .then(function(b) {
+      document.getElementById('cancelSummary').innerHTML =
+        '<div class="mfs-row"><span class="mfs-label">Booking ID</span><span class="mfs-val">#'+b.bookingId+'</span></div>'+
+        '<div class="mfs-row"><span class="mfs-label">Passenger</span><span class="mfs-val">'+b.passengerName+'</span></div>'+
+        '<div class="mfs-row"><span class="mfs-label">Flight</span><span class="mfs-val">'+b.flightNumber+' — '+b.source+' → '+b.destination+'</span></div>';
+      var btn = document.getElementById('confirmCancelBtn');
+      btn.disabled = false;
+      btn.textContent = '🗑 Yes, Cancel Booking';
+      openModal('cancelModal');
+    })
+    .catch(function(){ toast('Could not load booking details.', 'error'); });
+}
+
+function confirmCancel() {
+  var btn = document.getElementById('confirmCancelBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Cancelling…';
+
+  fetch(API + '/bookings/' + currentCancelId, { method: 'DELETE' })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = '🗑 Yes, Cancel Booking';
+      closeModal('cancelModal');
+      if (data.success) {
+        toast('Booking #'+currentCancelId+' deleted from MySQL. Seat restored.', 'info');
+        currentCancelId = null;
+        // Refresh
+        return fetch(API + '/flights/all')
+          .then(function(r){ return r.json(); })
+          .then(function(flights) {
+            allFlights = flights;
+            renderStats();
+            renderBookingsTable();
+          });
+      } else {
+        toast(data.error || 'Cancellation failed.', 'error');
+      }
+    })
+    .catch(function() {
+      btn.disabled = false;
+      btn.textContent = '🗑 Yes, Cancel Booking';
+      toast('Could not reach the Java server.', 'error');
+    });
+}
+
+/* =================================================================
+   LOOKUP
+================================================================= */
+function lookupBooking() {
+  var id = parseInt(document.getElementById('lookupId').value);
+  var resultDiv = document.getElementById('lookupResult');
+  if (!id || id < 1) { toast('Please enter a valid Booking ID.', 'error'); return; }
+  resultDiv.innerHTML = '<div class="empty"><div class="spinner" style="width:24px;height:24px;border-width:2px;"></div></div>';
+
+  fetch(API + '/bookings/' + id)
+    .then(function(r) {
+      if (r.status === 404) throw new Error('not_found');
+      return r.json();
+    })
+    .then(function(b) {
+      var dep = b.departure ? formatDate(b.departure) : { date:'-', time:'-' };
+      resultDiv.innerHTML =
+        '<div class="booking-detail-card">'+
+        '<div class="bdc-header">'+
+          '<div><div style="font-size:13px;color:var(--text-3)">Booking ID</div>'+
+          '<div style="font-size:22px;font-weight:800;color:var(--accent2)">#'+b.bookingId+'</div></div>'+
+          '<span class="badge-flight">'+b.flightNumber+'</span>'+
+        '</div>'+
+        '<div class="bdc-route"><span class="bdc-city">'+b.source+'</span><span class="bdc-arrow">→</span><span class="bdc-city">'+b.destination+'</span></div>'+
+        '<div class="bdc-grid">'+
+          '<div class="bdc-item"><label>Passenger</label><span>'+b.passengerName+'</span></div>'+
+          '<div class="bdc-item"><label>Email</label><span>'+b.passengerEmail+'</span></div>'+
+          '<div class="bdc-item"><label>Departure Date</label><span>'+dep.date+'</span></div>'+
+          '<div class="bdc-item"><label>Departure Time</label><span>'+dep.time+'</span></div>'+
+          '<div class="bdc-item"><label>Booking Date</label><span>'+b.bookingDate+'</span></div>'+
+        '</div>'+
+        '<button class="btn-danger" onclick="openCancelModal('+b.bookingId+')">Cancel This Booking</button>'+
+        '</div>';
+    })
+    .catch(function(e) {
+      if (e.message === 'not_found') {
+        resultDiv.innerHTML = '<div class="empty"><div class="empty-icon">❌</div><div class="empty-msg">Booking #'+id+' not found in MySQL</div><div class="empty-sub">Check the Booking ID and try again</div></div>';
+      } else {
+        resultDiv.innerHTML = '<div class="empty"><div class="empty-icon">⚠</div><div class="empty-msg">Could not reach server</div></div>';
+      }
+    });
+}
+
+/* =================================================================
+   SECTION / TAB NAV
+================================================================= */
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('visible'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('section-'+name).classList.add('visible');
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name === 'bookings') renderBookingsTable();
+  if (name === 'lookup')   document.getElementById('lookupResult').innerHTML = '';
+}
+
+/* =================================================================
+   MODAL HELPERS
+================================================================= */
+function openModal(id)  { document.getElementById(id).classList.add('open');    document.body.style.overflow='hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+document.querySelectorAll('.modal-overlay').forEach(function(o){
+  o.addEventListener('click', function(e){ if(e.target===o) closeModal(o.id); });
+});
+
+/* =================================================================
+   TOAST
+================================================================= */
+function toast(msg, type) {
+  type = type || 'info';
+  var icons = { success:'✔', error:'✕', info:'ℹ' };
+  var el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = '<span>'+icons[type]+'</span> ' + msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(function(){ el.classList.add('out'); setTimeout(function(){ el.remove(); }, 350); }, 3500);
+}
+
+/* =================================================================
+   DATE FORMATTER
+================================================================= */
+function formatDate(str) {
+  if (!str) return { date:'-', time:'-' };
+  var d = new Date(str.replace(' ','T'));
+  return {
+    date: d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }),
+    time: d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:true })
+  };
+}
+</script>
+</body>
+</html>

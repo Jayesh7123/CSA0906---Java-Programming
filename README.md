@@ -1,236 +1,189 @@
-# Flight Booking Management System
-
-A **Java console-based application** that connects to a **MySQL** database using **JDBC** to manage flight bookings. Built as a college project demonstrating core Java OOP, DAO pattern, JDBC transactions, and MySQL integration — without any heavy frameworks.
-
----
-
-## Features
-
-- **View Available Flights** — Displays all flights with seats remaining
-- **Search Flights** — Search by source and destination (case-insensitive)
-- **Book Ticket** — Book a seat with passenger name and email
-- **View Booking** — Look up full booking details by Booking ID
-- **View All Bookings** — See every booking in the system
-- **Cancel Booking** — Cancel a booking and automatically restore the seat
-- **Automatic Seat Management** — Seats decrease on booking, restore on cancellation
-- **JDBC Transactions** — Booking and seat update happen atomically (all-or-nothing)
-- **Input Validation** — Handles invalid inputs gracefully without crashing
+# ✈ SkyWay — Flight Booking System
+### Java + JDBC + MySQL | College Project by Jayesh
 
 ---
 
-## Technologies Used
+## 📋 Project Description
+
+A **Java application** that connects to a **MySQL database using JDBC** to manage flight bookings.
+
+### Features
+- ✅ **View Available Flights** — fetched live from MySQL
+- ✅ **Search Flights** — by source and destination (case-insensitive)
+- ✅ **Book a Ticket** — with passenger name & email, JDBC transaction ensures atomic seat deduction
+- ✅ **View a Booking** — full details via SQL JOIN query
+- ✅ **View All Bookings** — complete list from MySQL
+- ✅ **Cancel a Booking** — deletes from DB and automatically restores the seat count
+- ✅ **Auto Seat Management** — `available_seats` updated on every booking/cancellation
+
+---
+
+## 🛠 Technologies Used
 
 | Technology | Purpose |
 |---|---|
-| Java 17 | Core application language |
-| JDBC | Java API for connecting to MySQL |
-| MySQL 8.x | Relational database for persistent storage |
-| MySQL Connector/J 8.3.0 | JDBC driver that bridges Java and MySQL |
-| Maven | Dependency management and build tool |
-| Git / GitHub | Version control |
+| Java 17+ | Core application language |
+| JDBC (Java Database Connectivity) | Java API to connect to MySQL |
+| MySQL 8.x | Relational database |
+| MySQL Connector/J 8.3.0 | JDBC driver (JAR file) |
+| `com.sun.net.httpserver` | Built-in Java HTTP server (no extra dependencies) |
 
 ---
 
-## Project Structure
+## 🚀 How to Run (Step by Step)
+
+### Step 1 — Set up MySQL Database
+
+1. Make sure **MySQL Server** is running on your machine.
+2. Open MySQL Workbench or MySQL command line.
+3. Run the SQL setup script:
+   ```sql
+   source /path/to/FlightBookingSystem/database/flight_booking.sql;
+   ```
+   This creates the `flight_booking_db` database and inserts 10 sample flights.
+
+### Step 2 — Configure your MySQL password
+
+Open this file and set your MySQL password:
+```
+src/main/java/util/DBConnection.java
+```
+Change this line:
+```java
+private static final String PASSWORD = "your_password_here";
+```
+
+### Step 3 — Get the MySQL Connector JAR
+
+Download `mysql-connector-j-8.3.0.jar` from:
+https://dev.mysql.com/downloads/connector/j/
+
+Place it in the `lib/` folder:
+```
+FlightBookingSystem/
+  └── lib/
+       └── mysql-connector-j-8.3.0.jar   ← place here
+```
+
+### Step 4 — Run the Web Application
+
+**Double-click `run-web.bat`** (Windows)
+
+This will:
+1. Compile all Java source files
+2. Start the Java HTTP server (port 8080)
+3. Automatically open your browser at `http://localhost:8080`
+
+The beautiful web interface will open — connected to your MySQL database via JDBC!
+
+---
+
+## 📁 Project Structure
 
 ```
 FlightBookingSystem/
 │
-├── src/
-│   └── main/
-│       └── java/
-│           ├── model/
-│           │   ├── Flight.java       ← Flight entity class
-│           │   └── Booking.java      ← Booking entity class
-│           │
-│           ├── dao/
-│           │   ├── FlightDAO.java    ← All flight-related DB operations
-│           │   └── BookingDAO.java   ← All booking-related DB operations + transactions
-│           │
-│           ├── util/
-│           │   └── DBConnection.java ← JDBC connection setup
-│           │
-│           └── Main.java             ← Entry point, main menu, user input
+├── src/main/java/
+│   ├── model/
+│   │   ├── Flight.java          ← Flight entity
+│   │   └── Booking.java         ← Booking entity
+│   │
+│   ├── dao/
+│   │   ├── FlightDAO.java       ← All flight DB operations (JDBC)
+│   │   └── BookingDAO.java      ← All booking DB operations + JDBC Transactions
+│   │
+│   ├── util/
+│   │   └── DBConnection.java    ← JDBC connection setup (DriverManager)
+│   │
+│   ├── server/
+│   │   └── ApiServer.java       ← Java HTTP server + REST API endpoints
+│   │
+│   └── Main.java                ← Original console-based entry point
 │
 ├── database/
-│   └── flight_booking.sql    ← Run this to create DB and insert sample data
+│   └── flight_booking.sql       ← Run this to create DB + insert sample data
 │
 ├── lib/
-│   └── (place mysql-connector-j.jar here if not using Maven)
+│   └── (place mysql-connector-j-8.3.0.jar here)
 │
-├── README.md
-├── .gitignore
-└── pom.xml                   ← Maven configuration (includes MySQL Connector/J)
+├── index.html                   ← Web UI (served by ApiServer)
+├── run-web.bat                  ← ⭐ ONE-CLICK: compile + run web server
+├── run.bat                      ← Console-only version
+└── pom.xml                      ← Maven config (optional)
 ```
 
 ---
 
-## Requirements
+## 🔑 Key JDBC Concepts Demonstrated
 
-- **Java JDK 17** or higher
-- **MySQL Server 8.x**
-- **Maven 3.6+** (for dependency management and building)
-- Internet connection (first time, Maven downloads MySQL Connector/J automatically)
+| Concept | File | Description |
+|---|---|---|
+| `DriverManager.getConnection()` | `DBConnection.java` | Establishes connection to MySQL |
+| `Statement` | `FlightDAO.java` | Executes simple SELECT queries |
+| `PreparedStatement` | `FlightDAO.java`, `BookingDAO.java` | Parameterised queries — SQL injection safe |
+| `ResultSet` | All DAO files | Iterates over query results |
+| `RETURN_GENERATED_KEYS` | `BookingDAO.java` | Gets auto-generated booking_id after INSERT |
+| `setAutoCommit(false)` | `BookingDAO.java` | Starts manual JDBC transaction |
+| `commit()` | `BookingDAO.java` | Saves booking + seat update together |
+| `rollback()` | `BookingDAO.java` | Reverts all changes if anything fails |
+| SQL `JOIN` | `BookingDAO.java` | Fetches booking + flight details in one query |
 
 ---
 
-## Database Setup
+## 🗄 Database Schema
 
-### Step 1 — Start MySQL Server
-Make sure your MySQL server is running.
-
-### Step 2 — Open MySQL client
-```bash
-mysql -u root -p
-```
-Enter your MySQL root password when prompted.
-
-### Step 3 — Run the SQL script
 ```sql
-source C:/Users/JAYESH/OneDrive/Desktop/FlightBookingSystem/database/flight_booking.sql;
-```
-> **Or** open the file in **MySQL Workbench**: File → Open SQL Script → Run
+-- flights table
+CREATE TABLE flights (
+    flight_id       INT PRIMARY KEY AUTO_INCREMENT,
+    flight_number   VARCHAR(20)  NOT NULL UNIQUE,
+    source          VARCHAR(100) NOT NULL,
+    destination     VARCHAR(100) NOT NULL,
+    departure_time  DATETIME     NOT NULL,
+    total_seats     INT          NOT NULL,
+    available_seats INT          NOT NULL
+);
 
-This script will:
-- Create the `flight_booking_db` database
-- Create the `flights` and `bookings` tables
-- Insert 10 sample flights for immediate testing
-
-### Step 4 — Configure credentials
-Open `src/main/java/util/DBConnection.java` and update:
-
-```java
-private static final String USERNAME = "root";        // Your MySQL username
-private static final String PASSWORD = "your_password_here"; // Your MySQL password
+-- bookings table
+CREATE TABLE bookings (
+    booking_id      INT PRIMARY KEY AUTO_INCREMENT,
+    flight_id       INT          NOT NULL,
+    passenger_name  VARCHAR(100) NOT NULL,
+    passenger_email VARCHAR(100) NOT NULL,
+    booking_date    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (flight_id) REFERENCES flights(flight_id)
+);
 ```
 
 ---
 
-## Running the Application
+## 🌐 Architecture (Web Version)
 
-### Using Maven (Recommended)
-
-```bash
-# Navigate to the project root
-cd C:/Users/JAYESH/OneDrive/Desktop/FlightBookingSystem
-
-# Compile and run
-mvn compile exec:java -Dexec.mainClass="Main"
 ```
-
-### Build a single runnable JAR
-
-```bash
-mvn package
-java -jar target/FlightBookingSystem-1.0-SNAPSHOT-jar-with-dependencies.jar
+Browser (index.html)
+      ↕  HTTP + JSON
+ApiServer.java  ← Java built-in HTTP server
+      ↕  JDBC (PreparedStatement, Transactions)
+MySQL Database (flight_booking_db)
 ```
-
-### Using IntelliJ IDEA
-
-1. Open IntelliJ → **File → Open** → Select the `FlightBookingSystem` folder
-2. IntelliJ will detect `pom.xml` and import Maven dependencies automatically
-3. Open `src/main/java/Main.java`
-4. Click the **Run** button (green triangle) or press `Shift + F10`
-
-### Without Maven (Manual JAR)
-
-1. Download `mysql-connector-j-8.3.0.jar` from [MySQL Downloads](https://dev.mysql.com/downloads/connector/j/)
-2. Place it in the `lib/` folder
-3. Compile:
-   ```bash
-   javac -cp lib/mysql-connector-j-8.3.0.jar -sourcepath src/main/java src/main/java/Main.java -d out/
-   ```
-4. Run:
-   ```bash
-   java -cp out/;lib/mysql-connector-j-8.3.0.jar Main
-   ```
 
 ---
 
-## What is JDBC?
+## ✅ Requirements Checklist
 
-**JDBC (Java Database Connectivity)** is a standard Java API that allows Java programs to interact with relational databases.
-
-Key JDBC classes used in this project:
-
-| Class | Role |
+| Requirement | Status |
 |---|---|
-| `DriverManager` | Finds the MySQL driver and creates a Connection |
-| `Connection` | Represents an active session with the MySQL database |
-| `PreparedStatement` | Executes parameterized SQL queries safely |
-| `Statement` | Executes simple SQL without parameters |
-| `ResultSet` | Holds the rows returned by a SELECT query |
-
-**Why PreparedStatement instead of Statement?**
-PreparedStatement uses `?` placeholders and fills them in safely, preventing SQL injection attacks.
-
-**What is a JDBC Transaction?**
-A transaction groups multiple SQL statements so they either all succeed or all fail together:
-```java
-connection.setAutoCommit(false);  // Start transaction
-// ... execute INSERT, UPDATE ...
-connection.commit();              // Save all changes
-// On error:
-connection.rollback();            // Undo all changes
-```
+| Java application | ✅ |
+| Connects to MySQL using JDBC | ✅ |
+| View available flights | ✅ |
+| Book a ticket | ✅ |
+| View a booking | ✅ |
+| Cancel a booking | ✅ |
+| Auto-update available seats | ✅ |
 
 ---
 
-## How to Test
-
-### Test 1 — View Flights
-Choose option **1** → should show 9 available flights (flight AI110 has 0 seats).
-
-### Test 2 — Search Flights
-Choose option **2** → enter `Chennai` and `Hyderabad` → should show flight AI101.
-
-### Test 3 — Book a Ticket
-Choose option **3** → select a flight → enter name and email → note the Booking ID and that available seats decreased by 1.
-
-### Test 4 — View Your Booking
-Choose option **4** → enter the Booking ID from Test 3 → full details shown.
-
-### Test 5 — Cancel the Booking
-Choose option **6** → enter the same Booking ID → confirm cancellation → verify seats restored.
-
-### Test 6 — Book a Full Flight
-Try to book flight **AI110** (0 seats) → should show "Sorry! No seats available".
-
-### Test 7 — Non-existent Booking
-Choose option **4** → enter Booking ID `9999` → should show "Booking not found".
-
----
-
-## Screenshots
-
-*Add screenshots of the running application here after testing.*
-
----
-
-## GitHub Upload Instructions
-
-```bash
-# Initialize git
-git init
-
-# Add all project files
-git add .
-
-# First commit
-git commit -m "Initial commit: Flight Booking Management System"
-
-# Add your GitHub remote
-git remote add origin https://github.com/YOUR_USERNAME/FlightBookingSystem.git
-
-# Push to GitHub
-git push -u origin main
-```
-
-> **Note:** The `.gitignore` file ensures that `target/`, `.idea/`, `*.class`, and real passwords are NOT uploaded.
-
----
-
-## Author
+## 👨‍💻 Author
 
 **Jayesh**
-College Project — Java + MySQL + JDBC
+College Project — CSA0906 Java Programming
