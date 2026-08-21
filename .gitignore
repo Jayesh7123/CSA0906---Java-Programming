@@ -1,0 +1,76 @@
+# ============================================================
+#  .gitignore — Flight Booking System (Java/Maven)
+#  Prevents build artifacts, IDE files, and sensitive data
+#  from being uploaded to GitHub.
+# ============================================================
+
+# ------------------------------------
+# Maven build output
+# ------------------------------------
+target/
+out/
+*.jar
+!lib/*.jar
+
+# ------------------------------------
+# Java compiled class files
+# ------------------------------------
+*.class
+
+# ------------------------------------
+# IntelliJ IDEA project files
+# ------------------------------------
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ------------------------------------
+# Eclipse project files
+# ------------------------------------
+.classpath
+.project
+.settings/
+bin/
+
+# ------------------------------------
+# NetBeans project files
+# ------------------------------------
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# ------------------------------------
+# VS Code settings
+# ------------------------------------
+.vscode/
+
+# ------------------------------------
+# macOS system files
+# ------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ------------------------------------
+# Windows system files
+# ------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ------------------------------------
+# Log files
+# ------------------------------------
+*.log
+
+# ------------------------------------
+# Sensitive configuration files
+# (Do NOT upload real passwords)
+# ------------------------------------
+*.env
+config.properties
+secrets.properties
