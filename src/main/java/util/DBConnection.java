@@ -32,7 +32,7 @@ public class DBConnection {
     private static final String USERNAME = "root";
 
     // Your MySQL password — change this to your actual MySQL root password
-    private static final String PASSWORD = "your_password_here";
+    private static final String PASSWORD = "Jayesh@7123";
 
     // ---------------------------------------------------------------
     /**
