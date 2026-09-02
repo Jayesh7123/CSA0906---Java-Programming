@@ -1,0 +1,27 @@
+START
+  Initialize MySQL database and tables
+  Insert default admin and food menu if first run
+  Show Login window
+  IF admin logs in THEN open Admin Dashboard
+  ELSE IF customer logs in THEN open Customer Dashboard
+  ELSE allow customer registration
+
+CUSTOMER:
+  Load menu
+  Add selected food to cart
+  Modify/remove cart items
+  Calculate total bill
+  Start order thread
+  Synchronize stock update
+  Save order, order items and bill in database
+  Show invoice
+  Allow order history and cancellation of placed orders
+
+ADMIN:
+  Load food table
+  Add/update/delete menu items
+  Manage stock and prices
+  View all users
+  View all orders
+  Update order status
+END

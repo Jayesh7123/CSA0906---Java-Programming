@@ -1,0 +1,11 @@
+This project demonstrates:
+- Classes, Objects, Encapsulation, Data Hiding
+- Inheritance: Admin and Customer extend User
+- Polymorphism through openDashboard()
+- Collections: ArrayList, HashMap, HashSet, Hashtable, Iterator, Generics
+- Multithreading using OrderWorker thread
+- Synchronization with shared stock lock
+- Inter-thread coordination using wait()/notifyAll() on the stock monitor
+- Exception handling and custom InsufficientStockException
+- AWT/Swing GUI, event handling, layouts and dialogs
+- JDBC with CREATE, INSERT, SELECT, UPDATE and DELETE
